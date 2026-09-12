@@ -1,0 +1,37 @@
+# The @argszero/cordis-plugin-prompt-audit bundle patch: mount and go.
+#
+# The plugin needs no configuration. It listens on `llm/stream` — the seam that
+# receives the finished request, with `messages` frozen by the loop and asserted
+# by `agent-loop`'s own invariant to equal `session.deriveMessages()` — and
+# appends one JSON line per model call to a sidecar file outside the session log.
+#
+# Why a sidecar rather than the session log: the session storage contract rejects
+# unknown event types on append unless the event is declared ignorable, and that
+# declared-ignorable write path is not reachable from a plugin. An audit record
+# therefore cannot live in the log without a core change, and the whole point is
+# that the audit exists today.
+#
+# Nothing about a call changes. The listener delegates first, never alters the
+# stream, hashes only after the call is released, and swallows every I/O and
+# serialization failure: if the audit cannot be written, the call still happens.
+#
+# Config (optional):
+#
+#   - set:
+#       - id: prompt-audit
+#         config:
+#           path: /var/log/dsh/prompts.jsonl    # default: <DSH_HOME>/prompt-audit/requests.jsonl
+#           includeSessionless: false           # default: false (loop-built calls only)
+#
+# To answer "was this text ever delivered to the model as a user message?":
+#
+#   node node_modules/@argszero/cordis-plugin-prompt-audit/tools/verify-request.mjs \
+#     <text file> <sidecar path>
+#
+# The verifier recomputes the content address of the supplied text and reports
+# every recorded message whose digest matches, with the call it belonged to and
+# the author that delivered it.
+
+- insert:
+    - id: prompt-audit
+      name: '@argszero/cordis-plugin-prompt-audit'
