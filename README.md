@@ -30,11 +30,25 @@ switch. `session.v3.jsonl.zstd` cannot answer the question, and the model's own
 assistant text is replayed into later requests, so a fabricated instruction looks
 exactly like an instruction.
 
-## What this plugin does
+## Install
+
+**This plugin targets the `0.1.x` line and does not install or build on `0.2.x`.**
+On `dsh 0.2.1-rc.3` the install gate refuses it before anything loads — every
+harness peer range below stops at `<0.2.0` — and the tree does not compile
+against that line either: `tsc` fails with `src/index.ts(145,58): error TS2345`,
+because the request type the seam carries (`RequestMessage`) is no longer the
+`Message` type this source is written against. Measured 2026-10-25 with the
+harness dev pins moved to `0.2.1-rc.3`; the repository's own guard, *the dev pins
+stay on a line the range admits*, fails with them there, which is the declared
+range doing its job.
+
+So on a `0.1.6-alpha.2`-era runtime:
 
 ```sh
 dsh plugin add @argszero/cordis-plugin-prompt-audit
 ```
+
+## What this plugin does
 
 It mounts on `llm/stream`, the seam that carries the finished request, and writes
 one JSON line per model call to `<DSH_HOME>/prompt-audit/requests.jsonl`:
